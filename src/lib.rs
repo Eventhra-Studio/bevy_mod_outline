@@ -42,10 +42,11 @@ use std::any::TypeId;
 
 use bevy::anti_alias::fxaa::fxaa;
 use bevy::anti_alias::smaa::smaa;
-use bevy::asset::{load_internal_asset, AssetEventSystems};
+use bevy::asset::AssetEventSystems;
 use bevy::camera::visibility::{RenderLayers, VisibilitySystems};
 use bevy::core_pipeline::tonemapping::tonemapping;
 use bevy::core_pipeline::{Core3d, Core3dSystems};
+use bevy::curve::{Curve, Ease, FunctionCurve, Interval};
 use bevy::mesh::MeshVertexAttribute;
 use bevy::pbr::{MeshInputUniform, MeshUniform};
 use bevy::prelude::*;
@@ -78,8 +79,8 @@ use crate::msaa::{
 };
 use crate::node::{outline_render_pass, OpaqueOutline, StencilOutline, TransparentOutline};
 use crate::pipeline::{
-    init_outline_pipeline, OutlinePipeline, COMMON_SHADER_HANDLE, FRAGMENT_SHADER_HANDLE,
-    OUTLINE_SHADER_HANDLE,
+    init_outline_pipeline, load_wesl_shader, OutlinePipeline, COMMON_SHADER_HANDLE,
+    FRAGMENT_SHADER_HANDLE, OUTLINE_SHADER_HANDLE,
 };
 use crate::pipeline_key::compute_outline_key;
 use crate::queue::{
@@ -484,19 +485,9 @@ impl OutlinePlugin {
 
 impl Plugin for OutlinePlugin {
     fn build(&self, app: &mut App) {
-        load_internal_asset!(app, COMMON_SHADER_HANDLE, "common.wgsl", Shader::from_wgsl);
-        load_internal_asset!(
-            app,
-            OUTLINE_SHADER_HANDLE,
-            "outline.wgsl",
-            Shader::from_wgsl
-        );
-        load_internal_asset!(
-            app,
-            FRAGMENT_SHADER_HANDLE,
-            "fragment.wgsl",
-            Shader::from_wgsl
-        );
+        load_wesl_shader!(app, COMMON_SHADER_HANDLE, "common.wesl");
+        load_wesl_shader!(app, OUTLINE_SHADER_HANDLE, "outline.wesl");
+        load_wesl_shader!(app, FRAGMENT_SHADER_HANDLE, "fragment.wesl");
 
         app.add_plugins((
             ExtractComponentPlugin::<ResolvedOutlineMsaa>::default(),

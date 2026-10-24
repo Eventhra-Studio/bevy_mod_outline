@@ -52,6 +52,7 @@ pub(crate) fn init_sobel_init_pipeline(
                 blend: None,
                 write_mask: ColorWrites::ALL,
             })],
+            constants: vec![],
         }),
         primitive: PrimitiveState::default(),
         depth_stencil: None,

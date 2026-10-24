@@ -1,4 +1,4 @@
-use bevy::asset::{load_internal_asset, uuid_handle};
+use bevy::asset::uuid_handle;
 use bevy::core_pipeline::{Core3d, Core3dSystems};
 use bevy::pbr::{MeshInputUniform, MeshUniform};
 use bevy::render::batching::gpu_preprocessing::{BatchedInstanceBuffers, GpuPreprocessingSupport};
@@ -31,7 +31,7 @@ use wgpu_types::{LoadOp, Operations, StoreOp};
 use crate::add_dummy_phase_buffer;
 use crate::msaa::ResolvedOutlineMsaa;
 use crate::node::outline_render_pass;
-use crate::pipeline::OutlinePipeline;
+use crate::pipeline::{load_wesl_shader, OutlinePipeline};
 use crate::render::DrawOutline;
 use crate::uniforms::DrawMode;
 use crate::view_uniforms::OutlineViewUniform;
@@ -169,24 +169,13 @@ pub struct FloodPlugin;
 
 impl Plugin for FloodPlugin {
     fn build(&self, app: &mut App) {
-        load_internal_asset!(
-            app,
-            JUMP_FLOOD_SHADER_HANDLE,
-            "jump_flood.wgsl",
-            Shader::from_wgsl
-        );
-        load_internal_asset!(
+        load_wesl_shader!(app, JUMP_FLOOD_SHADER_HANDLE, "flood/jump_flood.wesl");
+        load_wesl_shader!(
             app,
             COMPOSE_OUTPUT_SHADER_HANDLE,
-            "compose_output.wgsl",
-            Shader::from_wgsl
+            "flood/compose_output.wesl"
         );
-        load_internal_asset!(
-            app,
-            SOBEL_INIT_SHADER_HANDLE,
-            "sobel_init.wgsl",
-            Shader::from_wgsl
-        );
+        load_wesl_shader!(app, SOBEL_INIT_SHADER_HANDLE, "flood/sobel_init.wesl");
 
         app.add_plugins(SortedRenderPhasePlugin::<FloodOutline, OutlinePipeline>::new(
             RenderDebugFlags::empty(),

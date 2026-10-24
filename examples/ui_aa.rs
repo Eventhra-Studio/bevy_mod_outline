@@ -14,6 +14,7 @@ use bevy::{
     },
     input_focus::tab_navigation::TabGroup,
     prelude::*,
+    scene::EntityScene,
     state::state::FreelyMutableState,
     ui_widgets::{
         popover::{Popover, PopoverAlign, PopoverPlacement, PopoverSide},
@@ -156,7 +157,7 @@ fn setup(
 
 /// A toolbar pinned to the top-left corner.
 fn ui() -> impl SceneList {
-    bsn_list![(
+    bsn_list! {
         Node {
             position_type: PositionType::Absolute,
             top: px(8),
@@ -167,66 +168,63 @@ fn ui() -> impl SceneList {
         }
         TabGroup
         Children [
-            aa_menu(),
-            outline_msaa_menu(),
-            outline_method_menu(),
-            (Text("Speed") ThemedText),
-            (
-                @FeathersSlider {
-                    @min: 0.0,
-                    @max: 2.0,
-                    @value: 1.0,
-                }
-                Node { width: px(220) }
-                SliderStep(0.1)
-                SliderPrecision(1)
-                SpeedSlider
-                on(slider_self_update)
-            ),
-        ]
-    )]
-}
-
-/// A drop-down menu: a button captioned `caption` that opens a popup listing `items`.
-fn menu(caption: impl SceneList + 'static, items: impl SceneList + 'static) -> impl Scene {
-    bsn! {
-        @FeathersMenu
-        Children [
-            (@FeathersMenuButton {
-                @caption: {Box::new(caption) as Box<dyn SceneList>}
-            }),
-            (@FeathersMenuPopup Children [ {Box::new(items) as Box<dyn SceneList>} ])
+            {aa_menu()}
+            -- {outline_msaa_menu()}
+            -- {outline_method_menu()}
+            -- Text("Speed") ThemedText
+            -- @FeathersSlider {
+                @min: 0.0,
+                @max: 2.0,
+            }
+            SliderValue(1.0)
+            Node { width: px(220) }
+            SliderStep(0.1)
+            SliderPrecision(1)
+            SpeedSlider
+            on(slider_self_update)
         ]
     }
 }
 
+/// A drop-down menu: a button captioned `caption` that opens a popup listing `items`.
+fn menu(caption: impl SceneList + 'static, items: impl SceneList + 'static) -> impl SceneList {
+    EntityScene(bsn! {
+        @FeathersMenu
+        Children [
+            @FeathersMenuButton {
+                @caption: {Box::new(caption) as Box<dyn SceneList>}
+            }
+            -- @FeathersMenuPopup Children [ {Box::new(items) as Box<dyn SceneList>} ]
+        ]
+    })
+}
+
 /// Menu for selecting the scene-wide anti-aliasing mode.
-fn aa_menu() -> impl Scene {
+fn aa_menu() -> impl SceneList {
     menu(
-        bsn_list![
-            (Text("Anti-aliasing: ") ThemedText),
-            (Text("") ThemedText AaLabel),
-        ],
-        bsn_list![
-            menu_item(AAMode::None),
-            msaa_submenu(),
-            menu_item(AAMode::Fxaa),
-            menu_item(AAMode::Smaa),
-            menu_item(AAMode::Taa),
-        ],
+        bsn_list! {
+            Text("Anti-aliasing: ") ThemedText
+            -- Text("") ThemedText AaLabel
+        },
+        bsn_list! {
+            {menu_item(AAMode::None)}
+            -- {msaa_submenu()}
+            -- {menu_item(AAMode::Fxaa)}
+            -- {menu_item(AAMode::Smaa)}
+            -- {menu_item(AAMode::Taa)}
+        },
     )
 }
 
 /// Nested sub-menu for picking the MSAA sample count when MSAA is selected.
-fn msaa_submenu() -> impl Scene {
-    bsn! {
+fn msaa_submenu() -> impl SceneList {
+    EntityScene(bsn! {
         @FeathersMenu
         Children [
-            (@FeathersMenuButton {
+            @FeathersMenuButton {
                 @caption: {bsn! { Text("MSAA") ThemedText }}
-            }),
-            (
-                @FeathersMenuPopup
+            }
+            -- @FeathersMenuPopup
                 Popover {
                     positions: vec![
                         PopoverPlacement {
@@ -243,58 +241,57 @@ fn msaa_submenu() -> impl Scene {
                     window_margin: 10.0,
                 }
                 Children [
-                    (menu_item(AAMode::Msaa(Msaa::Sample2))),
-                    (menu_item(AAMode::Msaa(Msaa::Sample4))),
-                    (menu_item(AAMode::Msaa(Msaa::Sample8))),
+                    {menu_item(AAMode::Msaa(Msaa::Sample2))}
+                    -- {menu_item(AAMode::Msaa(Msaa::Sample4))}
+                    -- {menu_item(AAMode::Msaa(Msaa::Sample8))}
                 ]
-            )
         ]
-    }
+    })
 }
 
 /// Menu for selecting the outline MSAA override.
-fn outline_msaa_menu() -> impl Scene {
+fn outline_msaa_menu() -> impl SceneList {
     menu(
-        bsn_list![
-            (Text("Outline MSAA: ") ThemedText),
-            (Text("") ThemedText OutlineMsaaLabel),
-        ],
-        bsn_list![
-            menu_item(OutlineAAMode::Auto),
-            menu_item(OutlineAAMode::Off),
-            menu_item(OutlineAAMode::Sample2),
-            menu_item(OutlineAAMode::Sample4),
-            menu_item(OutlineAAMode::Sample8),
-        ],
+        bsn_list! {
+            Text("Outline MSAA: ") ThemedText
+            -- Text("") ThemedText OutlineMsaaLabel
+        },
+        bsn_list! {
+            {menu_item(OutlineAAMode::Auto)}
+            -- {menu_item(OutlineAAMode::Off)}
+            -- {menu_item(OutlineAAMode::Sample2)}
+            -- {menu_item(OutlineAAMode::Sample4)}
+            -- {menu_item(OutlineAAMode::Sample8)}
+        },
     )
 }
 
 /// Menu for selecting the outline rendering method.
-fn outline_method_menu() -> impl Scene {
+fn outline_method_menu() -> impl SceneList {
     menu(
-        bsn_list![
-            (Text("Outline method: ") ThemedText),
-            (Text("") ThemedText OutlineKindLabel),
-        ],
-        bsn_list![
-            menu_item(OutlineKind::Extrude),
-            menu_item(OutlineKind::Flood),
-        ],
+        bsn_list! {
+            Text("Outline method: ") ThemedText
+            -- Text("") ThemedText OutlineKindLabel
+        },
+        bsn_list! {
+            {menu_item(OutlineKind::Extrude)}
+            -- {menu_item(OutlineKind::Flood)}
+        },
     )
 }
 
 /// A menu item, captioned with the `Debug` representation of `value`, which selects `value` for
 /// state `S` when activated.
-fn menu_item<S: FreelyMutableState + Copy>(value: S) -> impl Scene {
+fn menu_item<S: FreelyMutableState + Copy>(value: S) -> impl SceneList {
     let label = format!("{value:?}");
-    bsn! {
+    EntityScene(bsn! {
         @FeathersMenuItem {
             @caption: {bsn! { Text(label) ThemedText }}
         }
         on(move |_: On<Activate>, mut next: ResMut<NextState<S>>| {
             next.set(value);
         })
-    }
+    })
 }
 
 fn bounce(

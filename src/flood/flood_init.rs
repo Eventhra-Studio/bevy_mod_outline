@@ -11,6 +11,7 @@ use bevy::render::{
         LoadOp, Operations, RenderPassColorAttachment, RenderPassDescriptor, StoreOp,
     },
     renderer::RenderContext,
+    sync_world::MainEntityHashSet,
     texture::CachedTexture,
 };
 
@@ -45,6 +46,7 @@ pub(crate) fn queue_flood_meshes(
     specialisations: Res<DirtyOutlineSpecialisations>,
     mut flood_phases: ResMut<ViewSortedRenderPhases<FloodOutline>>,
     mut views: Query<(&ExtractedView, &mut OutlineQueueStatus)>,
+    mut queued_scratch_space: Local<MainEntityHashSet>,
 ) {
     let draw_flood = flood_draw_functions.read().get_id::<DrawOutline>().unwrap();
 
@@ -76,6 +78,7 @@ pub(crate) fn queue_flood_meshes(
             view.retained_view_entity,
             &render_view_visible.0,
             &view_pending_queues.prev_frame,
+            &mut queued_scratch_space,
         ) {
             let Some(outline) = render_outlines.get(&main_entity) else {
                 continue;

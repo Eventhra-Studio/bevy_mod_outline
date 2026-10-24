@@ -13,6 +13,7 @@ use bevy::{
     pbr::wireframe::{Wireframe, WireframePlugin},
     prelude::*,
     render::RenderDebugFlags,
+    scene::EntityScene,
     state::state::FreelyMutableState,
     ui_widgets::{slider_self_update, Activate, SliderPrecision, SliderStep, SliderValue},
 };
@@ -181,7 +182,7 @@ fn setup(
 
 /// A toolbar pinned to the top-left corner.
 fn ui() -> impl SceneList {
-    bsn_list![(
+    bsn_list! {
         Node {
             position_type: PositionType::Absolute,
             top: px(8),
@@ -192,93 +193,93 @@ fn ui() -> impl SceneList {
         }
         TabGroup
         Children [
-            mode_menu(),
-            face_menu(),
-            shape_menu(),
-            (Text("Rotation") ThemedText),
-            (
-                @FeathersSlider {
-                    @min: -180.0,
-                    @max: 180.0,
-                    @value: 0.0,
-                }
-                Node { width: px(220) }
-                SliderStep(1.0)
-                SliderPrecision(0)
-                RotationSlider
-                on(slider_self_update)
-            ),
-        ]
-    )]
-}
-
-/// A drop-down menu: a button captioned `caption` that opens a popup listing `items`.
-fn menu(caption: impl SceneList + 'static, items: impl SceneList + 'static) -> impl Scene {
-    bsn! {
-        @FeathersMenu
-        Children [
-            (@FeathersMenuButton {
-                @caption: {Box::new(caption) as Box<dyn SceneList>}
-            }),
-            (@FeathersMenuPopup Children [ {Box::new(items) as Box<dyn SceneList>} ])
+            {mode_menu()}
+            -- {face_menu()}
+            -- {shape_menu()}
+            -- Text("Rotation") ThemedText
+            -- @FeathersSlider {
+                @min: -180.0,
+                @max: 180.0,
+            }
+            Node { width: px(220) }
+            SliderStep(1.0)
+            SliderPrecision(0)
+            RotationSlider
+            on(slider_self_update)
         ]
     }
 }
 
+/// A drop-down menu: a button captioned `caption` that opens a popup listing `items`.
+fn menu(caption: impl SceneList + 'static, items: impl SceneList + 'static) -> impl SceneList {
+    EntityScene(bsn! {
+        @FeathersMenu
+        Children [
+            @FeathersMenuButton {
+                @caption: {Box::new(caption) as Box<dyn SceneList>}
+            }
+            -- @FeathersMenuPopup Children [ {Box::new(items) as Box<dyn SceneList>} ]
+        ]
+    })
+}
+
 /// Menu for selecting the outline mode.
-fn mode_menu() -> impl Scene {
+fn mode_menu() -> impl SceneList {
     menu(
-        bsn_list![
-            (Text("Outline mode: ") ThemedText),
-            (Text("") ThemedText ModeLabel),
-        ],
-        bsn_list![
-            menu_item(DrawMode::ExtrudeFlat),
-            menu_item(DrawMode::ExtrudeReal),
-            menu_item(DrawMode::FloodFlat),
-        ],
+        bsn_list! {
+            Text("Outline mode: ") ThemedText
+            -- Text("") ThemedText ModeLabel
+        },
+        bsn_list! {
+            {menu_item(DrawMode::ExtrudeFlat)}
+            -- {menu_item(DrawMode::ExtrudeReal)}
+            -- {menu_item(DrawMode::FloodFlat)}
+        },
     )
 }
 
 /// Menu for selecting which faces of the outline are rendered.
-fn face_menu() -> impl Scene {
+fn face_menu() -> impl SceneList {
     menu(
-        bsn_list![
-            (Text("Outline face: ") ThemedText),
-            (Text("") ThemedText FaceLabel),
-        ],
-        bsn_list![menu_item(DrawFace::Front), menu_item(DrawFace::DoubleSided),],
+        bsn_list! {
+            Text("Outline face: ") ThemedText
+            -- Text("") ThemedText FaceLabel
+        },
+        bsn_list! {
+            {menu_item(DrawFace::Front)}
+            -- {menu_item(DrawFace::DoubleSided)}
+        },
     )
 }
 
 /// Menu for selecting which shape mesh is displayed.
-fn shape_menu() -> impl Scene {
+fn shape_menu() -> impl SceneList {
     menu(
-        bsn_list![
-            (Text("Shape: ") ThemedText),
-            (Text("") ThemedText ShapeLabel),
-        ],
-        bsn_list![
-            menu_item(DrawShape::Cone),
-            menu_item(DrawShape::Triangle),
-            menu_item(DrawShape::Rectangle),
-            menu_item(DrawShape::Circle),
-        ],
+        bsn_list! {
+            Text("Shape: ") ThemedText
+            -- Text("") ThemedText ShapeLabel
+        },
+        bsn_list! {
+            {menu_item(DrawShape::Cone)}
+            -- {menu_item(DrawShape::Triangle)}
+            -- {menu_item(DrawShape::Rectangle)}
+            -- {menu_item(DrawShape::Circle)}
+        },
     )
 }
 
 /// A menu item, captioned with the `Debug` representation of `value`, which selects `value` for
 /// state `S` when activated.
-fn menu_item<S: FreelyMutableState + Copy>(value: S) -> impl Scene {
+fn menu_item<S: FreelyMutableState + Copy>(value: S) -> impl SceneList {
     let label = format!("{value:?}");
-    bsn! {
+    EntityScene(bsn! {
         @FeathersMenuItem {
             @caption: {bsn! { Text(label) ThemedText }}
         }
         on(move |_: On<Activate>, mut next: ResMut<NextState<S>>| {
             next.set(value);
         })
-    }
+    })
 }
 
 /// Writes the `Debug` representation of state `S` into every `Text` marked with `L`.

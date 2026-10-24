@@ -43,6 +43,27 @@ pub(crate) const OUTLINE_SHADER_HANDLE: Handle<Shader> =
 pub(crate) const FRAGMENT_SHADER_HANDLE: Handle<Shader> =
     uuid_handle!("1f5b5967-7cbb-4392-8f34-421587938a12");
 
+// Inserts a WESL shader into Assets<Shader> synchronously, under a handle that
+// the pipelines reference, with a path that registers its module identity as
+// `bevy_mod_outline::...` so that WESL imports can resolve against it.
+macro_rules! load_wesl_shader {
+    ($app: expr, $handle: expr, $path: literal) => {{
+        let mut shaders = $app
+            .world_mut()
+            .resource_mut::<bevy::asset::Assets<bevy::shader::Shader>>();
+        shaders
+            .insert(
+                $handle.id(),
+                bevy::shader::Shader::from_wesl(
+                    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/", $path)),
+                    concat!("embedded://bevy_mod_outline/", $path),
+                ),
+            )
+            .unwrap();
+    }};
+}
+pub(crate) use load_wesl_shader;
+
 #[derive(Resource)]
 pub(crate) struct OutlinePipeline {
     mesh_pipeline: MeshPipeline,
@@ -129,20 +150,15 @@ impl SpecializedMeshPipeline for OutlinePipeline {
             vertex_defs.push(val.clone());
             fragment_defs.push(val);
 
-            let channel_def = ShaderDefVal::UInt(
-                "ALPHA_MASK_CHANNEL".to_string(),
-                key.alpha_mask_channel_int(),
-            );
+            let channel_def =
+                ShaderDefVal::UInt("ALPHA_MASK_CHANNEL".into(), key.alpha_mask_channel_int());
             fragment_defs.push(channel_def);
 
             buffer_attrs.push(Mesh::ATTRIBUTE_UV_0.at_shader_location(2));
         }
 
         if let Some(sz) = self.instance_batch_size {
-            vertex_defs.push(ShaderDefVal::Int(
-                "INSTANCE_BATCH_SIZE".to_string(),
-                sz as i32,
-            ));
+            vertex_defs.push(ShaderDefVal::Int("INSTANCE_BATCH_SIZE".into(), sz as i32));
         }
 
         if key.msaa() != Msaa::Off {
@@ -240,12 +256,14 @@ impl SpecializedMeshPipeline for OutlinePipeline {
                 entry_point: None,
                 shader_defs: vertex_defs,
                 buffers,
+                constants: vec![],
             },
             fragment: Some(FragmentState {
                 shader: FRAGMENT_SHADER_HANDLE,
                 shader_defs: fragment_defs,
                 entry_point: None,
                 targets,
+                constants: vec![],
             }),
             layout: bind_layouts,
             primitive: PrimitiveState {
